@@ -1,0 +1,943 @@
+                {/* MODAL VIEW DETAIL SISWA LENGKAP */}
+                {selectedDetailStudent && (
+                  <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-8 overflow-y-auto bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="relative bg-white w-full max-w-4xl mt-4 mb-8 overflow-hidden rounded-3xl shadow-2xl border-t-8 border-[#064e3b] flex flex-col">
+                      
+                      {/* HEADER MODAL */}
+                      <div className="bg-white border-b px-8 py-5 flex items-center justify-between shrink-0">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-[#064e3b]/10 p-2 rounded-xl">
+                            <Users className="h-5 w-5 text-[#064e3b]" />
+                          </div>
+                          <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest">
+                            PROFIL LENGKAP SANTRI
+                          </h3>
+                        </div>
+                        <button 
+                          onClick={() => setSelectedDetailStudent(null)}
+                          className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-xl transition"
+                        >
+                          <X className="h-6 w-6" />
+                        </button>
+                      </div>
+
+                      {/* AVATAR & QUICK INFO */}
+                      <div className="p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 border-b border-slate-100 bg-emerald-50/10 pattern-islamic-light">
+                        <div className="h-20 w-20 rounded-full bg-emerald-100 border-4 border-white shadow-md flex items-center justify-center text-[#064e3b] font-extrabold text-3xl shrink-0">
+                          {selectedDetailStudent.nama ? selectedDetailStudent.nama[0].toUpperCase() : 'A'}
+                        </div>
+                        <div className="text-center sm:text-left space-y-1">
+                          <h4 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none uppercase">
+                            {selectedDetailStudent.nama}
+                          </h4>
+                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2.5 gap-y-1.5 text-xs font-semibold text-slate-400 mt-2">
+                            <span>NISN: <strong className="text-slate-700 font-mono">{selectedDetailStudent.nisn || '-'}</strong></span>
+                            <span>|</span>
+                            <span>NIS: <strong className="text-slate-700 font-mono">{selectedDetailStudent.nis || '-'}</strong></span>
+                            <span>|</span>
+                            {/* STATUS BADGE */}
+                            <span className={`px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border rounded-md ${
+                              (selectedDetailStudent.status || 'Aktif').toLowerCase() === 'aktif'
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                : (selectedDetailStudent.status || 'Aktif').toLowerCase() === 'lulus'
+                                ? 'bg-emerald-50/60 text-[#059669] border-emerald-200'
+                                : 'bg-rose-50 text-rose-600 border-rose-200'
+                            }`}>
+                              {selectedDetailStudent.status || 'Aktif'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+
+                      {/* SCROLLABLE FORM/INFO CONTAINER */}
+                      <div className="p-6 sm:p-8 flex-1 bg-slate-50/30 text-left space-y-10">
+                        {isEditingStudent ? (
+                          /* EDIT MODE */
+                          <div className="space-y-10">
+                            {/* SEKSI 1: PROFIL */}
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                              <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block mb-4">I. Profil & Akademik Santri</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nama Lengkap Santri</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nama || ''}
+                                    onChange={(e) => handleEditFormChange('nama', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">NISN Nasional</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nisn || ''}
+                                    onChange={(e) => handleEditFormChange('nisn', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">NIS / Nomor Induk Sekolah</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nis || ''}
+                                    onChange={(e) => handleEditFormChange('nis', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">NIK (Kependudukan)</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nik || ''}
+                                    onChange={(e) => handleEditFormChange('nik', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Jenis Kelamin</label>
+                                  <select 
+                                    value={studentEditForm.gender || studentEditForm.jenisKelamin || 'LAKI-LAKI'}
+                                    onChange={(e) => {
+                                      handleEditFormChange('gender', e.target.value);
+                                      handleEditFormChange('jenisKelamin', e.target.value);
+                                    }}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                  >
+                                    <option value="LAKI-LAKI">Laki-laki</option>
+                                    <option value="PEREMPUAN">Perempuan</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tempat Lahir</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.tempatLahir || ''}
+                                    onChange={(e) => handleEditFormChange('tempatLahir', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tanggal Lahir</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="YYYY-MM-DD"
+                                    value={studentEditForm.tanggalLahir || ''}
+                                    onChange={(e) => handleEditFormChange('tanggalLahir', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5 col-span-1 md:col-span-2 border-l-4 border-emerald-500 bg-emerald-50/30 p-3 rounded-r-xl">
+                                  <span className="block text-[11px] font-black text-emerald-700 uppercase tracking-wider mb-2">Penempatan Kelas Berbasis Tahun Ajaran</span>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Tahun Ajaran Aktif</label>
+                                      <select 
+                                        value={studentEditForm.academicYear || tahunAjaranAktif}
+                                        onChange={(e) => handleEditFormChange('academicYear', e.target.value)}
+                                        className="w-full px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                      >
+                                        {availableYears.map((year) => (
+                                          <option key={year} value={year}>{year}</option>
+                                        ))}
+                                        {studentEditForm.academicYear && !availableYears.includes(studentEditForm.academicYear) && (
+                                          <option value={studentEditForm.academicYear}>{studentEditForm.academicYear}</option>
+                                        )}
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Kelas Aktif</label>
+                                      <select 
+                                        value={studentEditForm.kelas || 'Belum Diatur'}
+                                        onChange={(e) => handleEditFormChange('kelas', e.target.value)}
+                                        className="w-full px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                      >
+                                        <option value="Belum Diatur">Belum Diatur</option>
+                                        {(() => {
+                                          const activeYear = tahunAjaranAktif.split(' ')[0];
+                                          return kelas.filter(k => !k.academicYear || k.academicYear === activeYear).map((k: any, idx: number) => (
+                                            <option key={`${k.id}-${idx}`} value={k.nama}>{k.nama}</option>
+                                          ));
+                                        })()}
+                                        {!kelas.some((k: any) => k.nama === studentEditForm.kelas) && studentEditForm.kelas && studentEditForm.kelas !== 'Belum Diatur' && (
+                                          <option value={studentEditForm.kelas}>{studentEditForm.kelas}</option>
+                                        )}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <p className="text-[9px] font-bold text-slate-400 mt-2">
+                                    * Kelas siswa terdaftar secara otomatis disesuaikan dengan Tahun Ajaran yang sedang diaktifkan/dipilih.
+                                  </p>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status Keaktifan</label>
+                                  <select 
+                                    value={studentEditForm.status || 'Aktif'}
+                                    onChange={(e) => handleEditFormChange('status', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                  >
+                                    <option value="Aktif">Aktif</option>
+                                    <option value="Lulus">Lulus</option>
+                                    <option value="Keluar">Keluar</option>
+                                    <option value="Mutasi">Mutasi</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sekolah Asal</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.sekolahAsal || ''}
+                                    onChange={(e) => handleEditFormChange('sekolahAsal', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Jumlah Hafalan Al-Qur'an (Juz)</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.jumlahHafalan || ''}
+                                    onChange={(e) => handleEditFormChange('jumlahHafalan', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Jumlah Saudara (Kandung)</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.saudara || ''}
+                                    onChange={(e) => handleEditFormChange('saudara', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5 col-span-1 md:col-span-2">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Prestasi Akademik</label>
+                                  <textarea 
+                                    rows={2}
+                                    value={studentEditForm.prestasiAkademik || ''}
+                                    onChange={(e) => handleEditFormChange('prestasiAkademik', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none resize-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5 col-span-1 md:col-span-2">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Prestasi Non Akademik</label>
+                                  <textarea 
+                                    rows={2}
+                                    value={studentEditForm.prestasiNonAkademik || ''}
+                                    onChange={(e) => handleEditFormChange('prestasiNonAkademik', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none resize-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* SEKSI 2: ALAMAT */}
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                              <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block mb-4">II. Alamat Domisili Santri</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2 space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Alamat Lengkap (Jalan, RT/RW)</label>
+                                  <textarea 
+                                    rows={2}
+                                    value={studentEditForm.alamat || ''}
+                                    onChange={(e) => handleEditFormChange('alamat', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none resize-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">RT</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.rt || ''}
+                                    onChange={(e) => handleEditFormChange('rt', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">RW</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.rw || ''}
+                                    onChange={(e) => handleEditFormChange('rw', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Dusun</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.dusun || ''}
+                                    onChange={(e) => handleEditFormChange('dusun', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                {/* Provinsi */}
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Provinsi *</label>
+                                  <select 
+                                    value={selectedProvId}
+                                    onChange={(e) => handleProvinsiChange(e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                  >
+                                    <option value="">{loadingProvinces ? 'Memuat Provinsi...' : '-- Pilih Provinsi --'}</option>
+                                    {provinces.map((p: any) => (
+                                      <option key={p.id} value={p.id}>{toTitleCase(p.name)}</option>
+                                    ))}
+                                    {studentEditForm.provinsi && !selectedProvId && (
+                                      <option value="" disabled>{studentEditForm.provinsi}</option>
+                                    )}
+                                  </select>
+                                </div>
+
+                                {/* Kabupaten / Kota */}
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kabupaten / Kota *</label>
+                                  <select 
+                                    value={selectedKabId}
+                                    onChange={(e) => handleKabupatenChange(e.target.value)}
+                                    disabled={!selectedProvId}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                                  >
+                                    <option value="">
+                                      {loadingRegencies ? 'Memuat Kabupaten...' : !selectedProvId ? '🔒 Pilih Provinsi dahulu' : '-- Pilih Kabupaten/Kota --'}
+                                    </option>
+                                    {regencies.map((r: any) => (
+                                      <option key={r.id} value={r.id}>{toTitleCase(r.name)}</option>
+                                    ))}
+                                    {studentEditForm.kabupatenKota && !selectedKabId && (
+                                      <option value="" disabled>{studentEditForm.kabupatenKota}</option>
+                                    )}
+                                  </select>
+                                </div>
+
+                                {/* Kecamatan */}
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kecamatan *</label>
+                                  <select 
+                                    value={selectedKecId}
+                                    onChange={(e) => handleKecamatanChange(e.target.value)}
+                                    disabled={!selectedKabId}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                                  >
+                                    <option value="">
+                                      {loadingDistricts ? 'Memuat Kecamatan...' : !selectedKabId ? '🔒 Pilih Kabupaten/Kota dahulu' : '-- Pilih Kecamatan --'}
+                                    </option>
+                                    {districts.map((d: any) => (
+                                      <option key={d.id} value={d.id}>{toTitleCase(d.name)}</option>
+                                    ))}
+                                    {studentEditForm.kecamatan && !selectedKecId && (
+                                      <option value="" disabled>{studentEditForm.kecamatan}</option>
+                                    )}
+                                  </select>
+                                </div>
+
+                                {/* Kelurahan / Desa */}
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kelurahan / Desa *</label>
+                                  <select 
+                                    value={villages.find((v: any) => toTitleCase(v.name) === toTitleCase(studentEditForm.kelurahan || ''))?.id || ''}
+                                    onChange={(e) => handleKelurahanChange(e.target.value)}
+                                    disabled={!selectedKecId}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                                  >
+                                    <option value="">
+                                      {loadingVillages ? 'Memuat Kelurahan...' : !selectedKecId ? '🔒 Pilih Kecamatan dahulu' : '-- Pilih Kelurahan/Desa --'}
+                                    </option>
+                                    {villages.map((v: any) => (
+                                      <option key={v.id} value={v.id}>{toTitleCase(v.name)}</option>
+                                    ))}
+                                    {studentEditForm.kelurahan && !villages.some((v: any) => toTitleCase(v.name) === toTitleCase(studentEditForm.kelurahan || '')) && (
+                                      <option value="" disabled>{studentEditForm.kelurahan}</option>
+                                    )}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* SEKSI 3: KELUARGA */}
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                              <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block mb-4">III. Data Keluarga & Wali</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nama Ayah</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.namaAyah || ''}
+                                    onChange={(e) => handleEditFormChange('namaAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pekerjaan Ayah</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.pekerjaanAyah || ''}
+                                    onChange={(e) => handleEditFormChange('pekerjaanAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nama Ibu</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.namaIbu || ''}
+                                    onChange={(e) => handleEditFormChange('namaIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pekerjaan Ibu</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.pekerjaanIbu || ''}
+                                    onChange={(e) => handleEditFormChange('pekerjaanIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">No. Handphone Orang Tua / WhatsApp</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.noHpOrangTua || studentEditForm.noHp || ''}
+                                    onChange={(e) => {
+                                      handleEditFormChange('noHpOrangTua', e.target.value);
+                                      handleEditFormChange('noHp', e.target.value);
+                                    }}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nomor Kartu Keluarga (KK)</label>
+                                  <input 
+                                    type="text" 
+                                    value={(studentEditForm as any).noKK || ''}
+                                    onChange={(e) => handleEditFormChange('noKK' as any, e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status Ayah</label>
+                                  <select 
+                                    value={studentEditForm.statusAyah || 'Masih Hidup'}
+                                    onChange={(e) => handleEditFormChange('statusAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                  >
+                                    <option value="Masih Hidup">Masih Hidup</option>
+                                    <option value="Sudah Meninggal">Sudah Meninggal</option>
+                                    <option value="Bercerai">Bercerai</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">NIK Ayah</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nikAyah || ''}
+                                    onChange={(e) => handleEditFormChange('nikAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tempat, Tanggal Lahir Ayah</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tempat, YYYY-MM-DD"
+                                    value={studentEditForm.tlAyah || ''}
+                                    onChange={(e) => handleEditFormChange('tlAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">No. HP Ayah</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.hpAyah || ''}
+                                    onChange={(e) => handleEditFormChange('hpAyah', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status Ibu</label>
+                                  <select 
+                                    value={studentEditForm.statusIbu || 'Masih Hidup'}
+                                    onChange={(e) => handleEditFormChange('statusIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                                  >
+                                    <option value="Masih Hidup">Masih Hidup</option>
+                                    <option value="Sudah Meninggal">Sudah Meninggal</option>
+                                    <option value="Bercerai">Bercerai</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">NIK Ibu</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.nikIbu || ''}
+                                    onChange={(e) => handleEditFormChange('nikIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tempat, Tanggal Lahir Ibu</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Tempat, YYYY-MM-DD"
+                                    value={studentEditForm.tlIbu || ''}
+                                    onChange={(e) => handleEditFormChange('tlIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">No. HP Ibu</label>
+                                  <input 
+                                    type="text" 
+                                    value={studentEditForm.hpIbu || ''}
+                                    onChange={(e) => handleEditFormChange('hpIbu', e.target.value)}
+                                    className="w-full px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                  />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        ) : (
+                          /* VIEW MODE */
+                          <div className="space-y-10">
+                            {/* SEKSI 1: PROFIL */}
+                            <div className="space-y-4">
+                              <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block">I. Profil & Akademik Santri</span>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* CARD NIK */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50/60 text-[#059669]">
+                                    <Shield className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NIK (KEPENDUDUKAN)</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 break-words font-mono block select-text">{selectedDetailStudent.nik || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD GENDER */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-teal-50 text-teal-600">
+                                    <Users className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">JENIS KELAMIN</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">
+                                      {selectedDetailStudent.gender || selectedDetailStudent.jenisKelamin || 'LAKI-LAKI'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD TAHUN MASUK */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                    <Calendar className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">TAHUN MASUK</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block">
+                                      {selectedDetailStudent.academicYear || '2023'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD TEMPAT LAHIR */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-purple-50 text-purple-600">
+                                    <MapPin className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">TEMPAT LAHIR</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.tempatLahir || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD TANGGAL LAHIR */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600">
+                                    <Clock className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">TANGGAL LAHIR</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block font-mono">{selectedDetailStudent.tanggalLahir || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD KELAS AKTIF */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-[#f0ebfc] text-indigo-900">
+                                    <BookOpen className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0 w-full">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">KELAS AKTIF</span>
+                                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-100 inline-block uppercase mt-1">
+                                      - {selectedDetailStudent.kelas || 'Belum Ada'} -
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* CARD JUMLAH HAFALAN */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                                    <Award className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">HAFALAN AL-QUR'AN</span>
+                                    <strong className="text-[13px] font-extrabold text-emerald-700 block">{selectedDetailStudent.jumlahHafalan || '-'} JUZ</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD JUMLAH SAUDARA */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-sky-50 text-sky-600">
+                                    <Users className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">JUMLAH SAUDARA</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block">{selectedDetailStudent.saudara || '-'} Bersaudara</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD SEKOLAH ASAL */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                    <BookOpen className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">SEKOLAH ASAL</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block uppercase truncate max-w-[180px]" title={selectedDetailStudent.sekolahAsal || '-'}>{selectedDetailStudent.sekolahAsal || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                {/* RIWAYAT AKADEMIK (HISTORY) */}
+                                <div className="md:col-span-3 bg-gradient-to-br from-slate-50 to-white border-2 border-slate-100 p-5 rounded-3xl space-y-4">
+                                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="bg-indigo-100 text-indigo-700 p-1.5 rounded-lg">
+                                        <History className="h-4 w-4" />
+                                      </div>
+                                      <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight">Kronologi Riwayat Akademik (Semua Tahun)</h4>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-400 italic">Berdasarkan NISN: {selectedDetailStudent.nisn}</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    {students
+                                      .filter(st => st.nisn === selectedDetailStudent.nisn)
+                                      .sort((a, b) => (b.academicYear || '').localeCompare(a.academicYear || ''))
+                                      .map((h, hIdx) => {
+                                        const periodGrades = gradesV2.filter(g => g.studentId === h.id);
+                                        const avgScore = periodGrades.length > 0 
+                                          ? Math.round(periodGrades.reduce((acc, curr) => acc + Number(curr.nilai), 0) / periodGrades.length)
+                                          : 0;
+                                          
+                                        return (
+                                          <div key={`hist-detail-${h.id}-${hIdx}`} className="bg-white border border-slate-200 p-3 rounded-2xl shadow-sm hover:border-indigo-300 transition-all group">
+                                            <div className="flex justify-between items-start mb-2">
+                                              <span className="text-[11px] font-black text-indigo-600 tracking-tighter">{h.academicYear || 'Bawaan'}</span>
+                                              <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${avgScore >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                Avg: {avgScore}
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                                                <span className="text-[12px] font-extrabold text-slate-700 uppercase">{h.kelas}</span>
+                                              </div>
+                                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{h.status || 'Aktif'}</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+
+                                {/* CARD PRESTASI AKADEMIK */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150 md:col-span-2">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-yellow-50 text-yellow-600">
+                                    <Award className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">PRESTASI AKADEMIK</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block select-text">{selectedDetailStudent.prestasiAkademik || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                {/* CARD PRESTASI NON AKADEMIK */}
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:border-indigo-100 transition duration-150 md:col-span-1">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600">
+                                    <Award className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">PRESTASI NON-AKADEMIK</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block select-text">{selectedDetailStudent.prestasiNonAkademik || '-'}</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                              {/* SEKSI 2: ALAMAT */}
+                              <div className="space-y-4">
+                                <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block">II. Alamat Domisili Santri</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl md:col-span-2 flex items-start space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50/60 text-[#059669] mt-1">
+                                    <Home className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">ALAMAT LENGKAP</span>
+                                    <p className="text-[13px] font-bold text-slate-700 uppercase mt-1 font-mono leading-relaxed select-text">
+                                      {selectedDetailStudent.alamat || '-'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-teal-50 text-teal-600">
+                                    <MapPin className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">RT / RW</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block font-mono">
+                                      RT: {selectedDetailStudent.rt || '-'} / RW: {selectedDetailStudent.rw || '-'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600">
+                                    <Building className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">KELURAHAN &amp; DUSUN</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">
+                                      Kel. {selectedDetailStudent.kelurahan || '-'} / Dusun {selectedDetailStudent.dusun || '-'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                    <MapPin className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">KECAMATAN</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.kecamatan || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-[#f0ebfc] text-indigo-900">
+                                    <MapPin className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">KABUPATEN / PROVINSI</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">
+                                      {selectedDetailStudent.kabupatenKota || '-'}, {selectedDetailStudent.provinsi || '-'}
+                                    </strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                              {/* SEKSI 3: KELUARGA */}
+                              <div className="space-y-4">
+                                <span className="text-[10px] font-black uppercase text-[#064e3b] tracking-widest border-b pb-2 block">III. Data Keluarga & Wali</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50/60 text-[#059669]">
+                                    <UserCheck className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NAMA AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.namaAyah || selectedDetailStudent.ortu || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-teal-50 text-teal-600">
+                                    <Briefcase className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">PEKERJAAN AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.pekerjaanAyah || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600">
+                                    <UserCheck className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NAMA IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.namaIbu || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600">
+                                    <Briefcase className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">PEKERJAAN IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.pekerjaanIbu || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                                    <Database className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NO. HP ORANG TUA / WA</span>
+                                    <strong className="text-[13px] font-extrabold text-emerald-700 block font-mono select-text">
+                                      {selectedDetailStudent.noHpOrangTua || selectedDetailStudent.noHp || '-'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-[#f0ebfc] text-indigo-900">
+                                    <FileText className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NOMOR KARTU KELUARGA</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block font-mono select-text">
+                                      {(selectedDetailStudent as any).noKK || '-'}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
+                                    <Heart className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">STATUS AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.statusAyah || 'Masih Hidup'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-slate-50 text-slate-600">
+                                    <Shield className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NIK AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 font-mono block select-text">{selectedDetailStudent.nikAyah || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-purple-50 text-purple-600">
+                                    <Clock className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">TTL AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block">{selectedDetailStudent.tlAyah || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                                    <Phone className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NO. HP AYAH</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 font-mono block select-text">{selectedDetailStudent.hpAyah || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600">
+                                    <Heart className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">STATUS IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 uppercase block">{selectedDetailStudent.statusIbu || 'Masih Hidup'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-slate-50 text-slate-600">
+                                    <Shield className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NIK IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 font-mono block select-text">{selectedDetailStudent.nikIbu || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-purple-50 text-purple-600">
+                                    <Clock className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">TTL IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 block">{selectedDetailStudent.tlIbu || '-'}</strong>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-200/60 p-4 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md transition">
+                                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                                    <Phone className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider">NO. HP IBU</span>
+                                    <strong className="text-[13px] font-extrabold text-slate-800 font-mono block select-text">{selectedDetailStudent.hpIbu || '-'}</strong>
+                                  </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        )}
+                      </div>
+
+                      {/* FOOTER ACTION BUTTONS */}
+                      <div className="p-4 bg-slate-50 border-t flex items-center justify-between">
+                        <div>
+                          {isEditingStudent ? (
+                            <button 
+                              onClick={() => setIsEditingStudent(false)}
+                              className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black uppercase rounded-xl transition duration-150 cursor-pointer"
+                            >
+                              Batal
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                setStudentEditForm({ ...selectedDetailStudent });
+                                resolveStudentLocationIds(selectedDetailStudent);
+                                setIsEditingStudent(true);
+                              }}
+                              className="px-5 py-2.5 bg-[#064e3b] hover:bg-[#022c22] text-white text-xs font-black uppercase rounded-xl transition duration-150 flex items-center space-x-2 cursor-pointer"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              <span>Edit Biodata</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          {isEditingStudent ? (
+                            <button 
+                              onClick={handleSaveStudentEdit}
+                              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase rounded-xl transition duration-150 flex items-center space-x-2 shadow-sm cursor-pointer"
+                            >
+                              <Save className="h-4 w-4" />
+                              <span>Simpan Perubahan</span>
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => setSelectedDetailStudent(null)}
+                              className="px-6 py-2.5 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-black uppercase rounded-xl transition duration-150 shadow-sm cursor-pointer"
+                            >
+                              Tutup Detail
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch || (typeof globalThis !== 'undefined' ? globalThis.fetch : null);
+          if (originalFetch) {
+            var currentFetch = originalFetch;
+            var descriptor = {
+              get: function() {
+                return currentFetch;
+              },
+              set: function(val) {
+                currentFetch = val;
+              },
+              configurable: true,
+              enumerable: true
+            };
+            Object.defineProperty(window, 'fetch', descriptor);
+            if (typeof globalThis !== 'undefined') {
+              try {
+                Object.defineProperty(globalThis, 'fetch', descriptor);
+              } catch (e) {}
+            }
+          }
+        } catch (err) {
+          console.warn("Could not patch window.fetch setter safely:", err);
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PORTAL AKADEMIK ALWA</title>
+    <meta name="description" content="SISTEM INFORMASI DAN PSB PONDOK TAHFIDZ AL IHSAN WAT TAQWA ." />
+    <meta property="og:title" content="PORTAL AKADEMIK ALWA" />
+    <meta property="og:description" content="SISTEM INFORMASI DAN PSB PONDOK TAHFIDZ AL IHSAN WAT TAQWA ." />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

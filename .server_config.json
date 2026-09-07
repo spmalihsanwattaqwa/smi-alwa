@@ -1,0 +1,112 @@
+{
+  "portalAccessConfigs": [
+    {
+      "id": "portal-superadmin",
+      "label": "Super Admin",
+      "password": "adminalwa",
+      "menuPermissions": {
+        "dashboard_utama": "write",
+        "master_siswa": "write",
+        "master_kelas": "write",
+        "master_pelajaran": "write",
+        "master_ustadz": "write",
+        "master_beasiswa": "write",
+        "akademik_jadwal": "write",
+        "akademik_kehadiran_siswa": "write",
+        "akademik_barcode": "write",
+        "akademik_kehadiran_guru": "write",
+        "akademik_nilai": "write",
+        "akademik_tahfidz": "write",
+        "akademik_card_generator": "write",
+        "laporan_akademik": "write",
+        "_ppdb_eval": "write",
+        "berkas_pendaftaran": "write",
+        "_ppdb_berita": "write",
+        "sistem_mutasi_alokasi": "write",
+        "_ekspor_backup_sheets": "write",
+        "sistem_pengaturan": "write"
+      }
+    },
+    {
+      "id": "portal-guru",
+      "label": "Guru Musyrif",
+      "password": "gurualwa",
+      "menuPermissions": {
+        "dashboard_utama": "read",
+        "master_siswa": "read",
+        "master_kelas": "read",
+        "master_pelajaran": "read",
+        "master_ustadz": "read",
+        "master_beasiswa": "none",
+        "akademik_jadwal": "write",
+        "akademik_kehadiran_siswa": "write",
+        "akademik_barcode": "write",
+        "akademik_kehadiran_guru": "write",
+        "akademik_nilai": "write",
+        "akademik_tahfidz": "write",
+        "akademik_card_generator": "read",
+        "laporan_akademik": "write",
+        "_ppdb_eval": "none",
+        "berkas_pendaftaran": "none",
+        "_ppdb_berita": "none",
+        "sistem_mutasi_alokasi": "none",
+        "_ekspor_backup_sheets": "none",
+        "sistem_pengaturan": "none"
+      }
+    },
+    {
+      "id": "portal-psb",
+      "label": "psb",
+      "password": "psbalwa",
+      "menuPermissions": {
+        "dashboard_utama": "read",
+        "master_siswa": "none",
+        "master_kelas": "none",
+        "master_pelajaran": "none",
+        "master_ustadz": "none",
+        "master_beasiswa": "none",
+        "akademik_jadwal": "none",
+        "akademik_kehadiran_siswa": "none",
+        "akademik_barcode": "none",
+        "akademik_kehadiran_guru": "none",
+        "akademik_nilai": "none",
+        "akademik_tahfidz": "none",
+        "akademik_card_generator": "none",
+        "laporan_akademik": "none",
+        "_ppdb_eval": "write",
+        "berkas_pendaftaran": "write",
+        "_ppdb_berita": "write",
+        "sistem_mutasi_alokasi": "none",
+        "_ekspor_backup_sheets": "none",
+        "sistem_pengaturan": "none"
+      }
+    },
+    {
+      "id": "portal_1788683604853_d8eye9uz0x",
+      "label": "stafadmin",
+      "password": "stafalwa",
+      "menuPermissions": {
+        "dashboard_utama": "write",
+        "master_siswa": "write",
+        "master_kelas": "write",
+        "master_pelajaran": "write",
+        "master_ustadz": "write",
+        "master_beasiswa": "write",
+        "akademik_jadwal": "write",
+        "akademik_kehadiran_siswa": "write",
+        "akademik_barcode": "write",
+        "akademik_kehadiran_guru": "write",
+        "akademik_nilai": "write",
+        "akademik_tahfidz": "write",
+        "akademik_card_generator": "read",
+        "laporan_akademik": "write",
+        "_ppdb_eval": "read",
+        "berkas_pendaftaran": "read",
+        "sistem_mutasi_alokasi": "write",
+        "_ekspor_backup_sheets": "write",
+        "sistem_pengaturan": "read"
+      }
+    }
+  ],
+  "appsScriptUrl": "https://script.google.com/macros/s/AKfycbwmnw9FAQ2O3P6xEeGZZA9jd5-8oE9tqJbMmE9CagoKyIX4GU73DFBhgSQM8KeFJAaKDA/exec"
+}

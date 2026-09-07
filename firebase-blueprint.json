@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "AppSettings": {
+      "title": "Application Settings",
+      "description": "Global application settings shared across devices.",
+      "type": "object",
+      "properties": {
+        "tahunAjaranAktif": { "type": "string" },
+        "semesterAktif": { "type": "string" },
+        "availableYears": { "type": "array" }
+      }
+    },
+    "SchoolProfile": {
+      "title": "School Profile",
+      "description": "School identification and contact details.",
+      "type": "object",
+      "properties": {
+        "nama": { "type": "string" },
+        "nsm": { "type": "string" },
+        "npsn": { "type": "string" },
+        "alamat": { "type": "string" },
+        "kabupatenKota": { "type": "string" },
+        "provinsi": { "type": "string" },
+        "noHp": { "type": "string" },
+        "website": { "type": "string" },
+        "email": { "type": "string" },
+        "direkturPondok": { "type": "string" },
+        "direkturAkademik": { "type": "string" },
+        "logo": { "type": "string" },
+        "stempel": { "type": "string" },
+        "tandaTanganDirektur": { "type": "string" },
+        "tandaTanganAkademik": { "type": "string" }
+      }
+    },
+    "GradeCategories": {
+      "title": "Grade Categories",
+      "description": "Kriteria penilaian (A, B, C, D).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "nama": { "type": "string" },
+          "minScore": { "type": "number" },
+          "maxScore": { "type": "number" }
+        }
+      }
+    },
+    "GlobalConfig": {
+      "title": "Global System Configuration",
+      "description": "System-wide settings including portal access and contact info.",
+      "type": "object"
+    }
+  },
+  "firestore": {
+    "/configs/app_settings": {
+      "schema": "AppSettings",
+      "description": "The global configuration document for the application."
+    },
+    "/configs/school_profile": {
+      "schema": "SchoolProfile",
+      "description": "Institutional profile information."
+    },
+    "/configs/grade_categories": {
+      "schema": "GradeCategories",
+      "description": "Scoring categories and thresholds."
+    },
+    "/configs/system_config": {
+      "schema": "GlobalConfig",
+      "description": "General system configurations."
+    }
+  }
+}

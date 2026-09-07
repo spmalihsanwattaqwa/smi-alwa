@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'spmalihsanwattaqwa@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Configs collection
+    match /configs/{configId} {
+      allow read: if true;
+      allow create, update: if isValidId(configId) && (
+        (configId == 'app_settings' && isValidAppSettings(incoming())) ||
+        (configId == 'school_profile' && isValidSchoolProfile(incoming())) ||
+        (configId == 'grade_categories' && isValidGradeCategories(incoming())) ||
+        (configId == 'system_config' && isValidSystemConfig(incoming()))
+      );
+      allow delete: if false; // Configs should not be deleted
+    }
+
+    // Master Data collection for sync across devices
+    match /master_data/{dataId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    function isValidSystemConfig(data) {
+      return data is map;
+    }
+
+    function isValidGradeCategories(data) {
+      return data is list && data.size() <= 20;
+    }
+
+    function isValidAppSettings(data) {
+      return data.keys().hasAll(['tahunAjaranAktif', 'semesterAktif', 'availableYears']) &&
+             data.tahunAjaranAktif is string && data.tahunAjaranAktif.size() <= 50 &&
+             data.semesterAktif is string && data.semesterAktif.size() <= 20 &&
+             data.availableYears is list && data.availableYears.size() <= 50;
+    }
+
+    function isValidSchoolProfile(data) {
+      return data.keys().hasAll(['nama']) &&
+             data.nama is string && data.nama.size() <= 200 &&
+             (!('nsm' in data) || (data.nsm is string && data.nsm.size() <= 50)) &&
+             (!('npsn' in data) || (data.npsn is string && data.npsn.size() <= 50)) &&
+             (!('alamat' in data) || (data.alamat is string && data.alamat.size() <= 500)) &&
+             (!('logo' in data) || (data.logo is string && data.logo.size() <= 1000000)); // Allow large strings for base64 if needed, though not ideal
+    }
+  }
+}
