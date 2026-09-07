@@ -95,52 +95,42 @@ export default function CekDataSantri({
   const [rombelSearch, setRombelSearch] = useState('');
   const [selectedRombelFilter, setSelectedRombelFilter] = useState<string | null>(null);
 
-  // Active Academic Year State (prioritize localStorage, then dataset's populated year, then props)
-  const [activeTahunAjaran, setActiveTahunAjaran] = useState<string>(() => {
+  // Helper to extract the active academic year strictly from system settings
+  const getSettingTahunAjaran = () => {
     try {
       const saved = localStorage.getItem('cfg_tahun_ajaran_aktif');
       if (saved) {
         const clean = saved.split(' ')[0].trim();
         if (clean) return clean;
       }
-
-      // If not explicitly saved, select the academic year that contains the student dataset
-      const raw = localStorage.getItem('db_students');
-      const list = raw ? JSON.parse(raw) : INITIAL_STUDENTS;
-      if (Array.isArray(list) && list.length > 0) {
-        const counts: Record<string, number> = {};
-        list.forEach((s: any) => {
-          const y = String(s.academicYear || s.tahunAjaran || '').split(' ')[0].trim();
-          if (y) counts[y] = (counts[y] || 0) + 1;
-        });
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        if (sorted.length > 0 && sorted[0][1] > 0) {
-          return sorted[0][0];
+      const rawCfg = localStorage.getItem('db_config');
+      if (rawCfg) {
+        const parsed = JSON.parse(rawCfg);
+        if (parsed.tahunAjaran) {
+          const clean = parsed.tahunAjaran.split(' ')[0].trim();
+          if (clean) return clean;
         }
-      }
-
-      if (tahunAjaranProp) {
-        const clean = tahunAjaranProp.split(' ')[0].trim();
-        if (clean) return clean;
       }
       if (config?.tahunAjaran) {
         const clean = config.tahunAjaran.split(' ')[0].trim();
         if (clean) return clean;
       }
+      if (tahunAjaranProp) {
+        const clean = tahunAjaranProp.split(' ')[0].trim();
+        if (clean) return clean;
+      }
     } catch (e) {}
-    return '2024/2025';
-  });
+    return '2025/2026';
+  };
 
-  // Listen to external academic year changes
+  // Active Academic Year State (Statis sesuai Pengaturan Sistem)
+  const [activeTahunAjaran, setActiveTahunAjaran] = useState<string>(getSettingTahunAjaran);
+
+  // Sync automatically when settings change in GuruPanel / Pengaturan
   useEffect(() => {
     const handleYearUpdate = () => {
-      try {
-        const saved = localStorage.getItem('cfg_tahun_ajaran_aktif');
-        if (saved) {
-          const clean = saved.split(' ')[0].trim();
-          if (clean) setActiveTahunAjaran(clean);
-        }
-      } catch (e) {}
+      const year = getSettingTahunAjaran();
+      setActiveTahunAjaran(year);
     };
 
     window.addEventListener('academicYearChanged', handleYearUpdate);
@@ -149,61 +139,14 @@ export default function CekDataSantri({
       window.removeEventListener('academicYearChanged', handleYearUpdate);
       window.removeEventListener('storage', handleYearUpdate);
     };
-  }, []);
+  }, [config?.tahunAjaran, tahunAjaranProp]);
 
-  // Sync when tahunAjaranProp updates
   useEffect(() => {
-    if (tahunAjaranProp) {
-      const clean = tahunAjaranProp.split(' ')[0].trim();
-      if (clean && clean !== activeTahunAjaran) {
-        const saved = localStorage.getItem('cfg_tahun_ajaran_aktif');
-        if (!saved) {
-          setActiveTahunAjaran(clean);
-        }
-      }
+    const year = getSettingTahunAjaran();
+    if (year !== activeTahunAjaran) {
+      setActiveTahunAjaran(year);
     }
-  }, [tahunAjaranProp]);
-
-  // Available academic years for switching/viewing
-  const availableYears = useMemo(() => {
-    const set = new Set<string>(['2024/2025', '2025/2026', '2026/2027']);
-    if (config?.tahunAjaran) set.add(config.tahunAjaran.split(' ')[0].trim());
-    if (activeTahunAjaran) set.add(activeTahunAjaran.split(' ')[0].trim());
-
-    const allStudents = studentsData && studentsData.length > 0 ? studentsData : INITIAL_STUDENTS;
-    allStudents.forEach((s: any) => {
-      if (s.academicYear) {
-        const y = String(s.academicYear).split(' ')[0].trim();
-        if (y && y.length >= 4) set.add(y);
-      }
-      if (Array.isArray(s.academicHistory)) {
-        s.academicHistory.forEach((h: any) => {
-          if (h.academicYear) {
-            const y = String(h.academicYear).split(' ')[0].trim();
-            if (y && y.length >= 4) set.add(y);
-          }
-        });
-      }
-    });
-
-    if (Array.isArray(config?.academicYearConfigs)) {
-      config.academicYearConfigs.forEach((c: any) => {
-        if (c.tahun) set.add(c.tahun.split(' ')[0].trim());
-      });
-    }
-
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
-  }, [studentsData, config, activeTahunAjaran]);
-
-  const handleSelectYear = (newYear: string) => {
-    const clean = newYear.split(' ')[0].trim();
-    setActiveTahunAjaran(clean);
-    setSelectedRombelFilter(null);
-    try {
-      localStorage.setItem('cfg_tahun_ajaran_aktif', clean);
-      window.dispatchEvent(new Event('academicYearChanged'));
-    } catch (e) {}
-  };
+  }, [config?.tahunAjaran, tahunAjaranProp]);
 
   // Helper to extract student's class and active status for a specific academic year
   const getStudentInYear = (s: any, targetYear: string) => {
@@ -597,7 +540,7 @@ export default function CekDataSantri({
     );
     if (anyYearStudent) {
       const sYear = anyYearStudent.academicYear || (anyYearStudent.academicHistory?.[0]?.academicYear) || 'tahun lain';
-      setErrorMsg(`Santri "${anyYearStudent.nama || key}" terdaftar pada Tahun Ajaran ${sYear}, bukan pada Tahun Ajaran aktif saat ini (${activeTahun}). Silakan ubah pilihan Tahun Ajaran di atas ke ${sYear} untuk melihat data lengkapnya.`);
+      setErrorMsg(`Santri "${anyYearStudent.nama || key}" terdaftar pada Tahun Ajaran ${sYear}, sedangkan Tahun Ajaran aktif sistem saat ini adalah ${activeTahun}.`);
       return;
     }
 
@@ -721,23 +664,22 @@ export default function CekDataSantri({
           </p>
         </div>
 
-        {/* Year Selector / Switcher */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 relative z-10 bg-white/90 p-3 rounded-2xl border border-slate-200/90 shadow-xs">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <Calendar className="h-4 w-4 text-emerald-600" />
-            <span>Pilih TA:</span>
+        {/* Static Tahun Ajaran Display (Sesuai Pengaturan Sistem) */}
+        <div className="flex items-center gap-3.5 shrink-0 relative z-10 bg-white/95 px-4 py-3 rounded-2xl border border-slate-200/90 shadow-xs">
+          <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+            <Calendar className="h-5 w-5" />
           </div>
-          <select
-            value={activeTahunAjaran}
-            onChange={(e) => handleSelectYear(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 cursor-pointer"
-          >
-            {availableYears.map(yr => (
-              <option key={yr} value={yr}>
-                TA {yr} {yr === activeTahunAjaran ? '• Aktif' : ''}
-              </option>
-            ))}
-          </select>
+          <div className="text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Tahun Ajaran Aktif
+            </div>
+            <div className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+              <span>{activeTahunAjaran}</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Pengaturan
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -929,26 +871,38 @@ export default function CekDataSantri({
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">
                 {filteredRombelList.map((rombel, idx) => {
                   const isSelected = selectedRombelFilter === rombel.name;
+                  const cleanRombelName = String(rombel.name || '').trim().toUpperCase();
+                  const isEndingWithB = cleanRombelName.endsWith('B') || cleanRombelName.endsWith('(B)');
 
                   return (
                     <div 
                       key={rombel.name || idx}
                       onClick={() => setSelectedRombelFilter(isSelected ? null : rombel.name)}
-                      title={`${rombel.name}: ${rombel.total} Santri (Klik untuk lihat daftar santri)`}
+                      title={`${rombel.name}: ${rombel.total} Santri ${isEndingWithB ? '(Kelas B)' : ''} - Klik untuk rincian`}
                       className={`group border rounded-xl p-2.5 text-center transition-all cursor-pointer relative overflow-hidden flex flex-col items-center justify-center min-h-[68px] ${
-                        isSelected 
-                          ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-300 shadow-sm' 
-                          : 'border-emerald-200/90 bg-emerald-50 hover:bg-emerald-100/80 hover:border-emerald-300 hover:shadow-xs'
+                        isEndingWithB
+                          ? (isSelected 
+                              ? 'border-yellow-500 bg-yellow-100 ring-2 ring-yellow-300 shadow-sm' 
+                              : 'border-yellow-200/90 bg-yellow-50 hover:bg-yellow-100/80 hover:border-yellow-300 hover:shadow-xs')
+                          : (isSelected 
+                              ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-300 shadow-sm' 
+                              : 'border-emerald-200/90 bg-emerald-50 hover:bg-emerald-100/80 hover:border-emerald-300 hover:shadow-xs')
                       }`}
                     >
-                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight truncate w-full" title={rombel.name}>
+                      <span className={`text-[11px] font-bold uppercase tracking-tight truncate w-full ${
+                        isEndingWithB ? 'text-yellow-950' : 'text-slate-800'
+                      }`} title={rombel.name}>
                         {rombel.name}
                       </span>
                       <div className="mt-1 flex items-baseline justify-center gap-1">
-                        <span className="text-base font-extrabold text-emerald-800 leading-none">
+                        <span className={`text-base font-extrabold leading-none ${
+                          isEndingWithB ? 'text-yellow-800' : 'text-emerald-800'
+                        }`}>
                           {rombel.total}
                         </span>
-                        <span className="text-[10px] font-semibold text-emerald-600 leading-none">
+                        <span className={`text-[10px] font-semibold leading-none ${
+                          isEndingWithB ? 'text-yellow-600' : 'text-emerald-600'
+                        }`}>
                           Santri
                         </span>
                       </div>
@@ -959,69 +913,90 @@ export default function CekDataSantri({
             )}
 
             {/* Drilldown Table if a Rombel is clicked */}
-            {selectedRombelFilter && (
-              <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 sm:p-5 space-y-3 animate-apple-fade">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/70 pb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Daftar Santri Kelas: <span className="text-emerald-800 font-extrabold">{selectedRombelFilter}</span>
-                    </h4>
-                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      {studentsInSelectedRombel.length} Santri • TA {activeTahunAjaran}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRombelFilter(null)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-fit"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    <span>Tutup Rincian Kelas</span>
-                  </button>
-                </div>
+            {selectedRombelFilter && (() => {
+              const cleanSelected = String(selectedRombelFilter).trim().toUpperCase();
+              const isSelectedB = cleanSelected.endsWith('B') || cleanSelected.endsWith('(B)');
 
-                <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-emerald-200/80 bg-white shadow-xs">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-emerald-50 text-emerald-900 font-bold sticky top-0 border-b border-emerald-100">
-                      <tr>
-                        <th className="px-3 py-2 w-12 text-center">No</th>
-                        <th className="px-3 py-2">Nama Santri</th>
-                        <th className="px-3 py-2">NISN</th>
-                        <th className="px-3 py-2">NIS</th>
-                        <th className="px-3 py-2">Jenis Kelamin</th>
-                        <th className="px-3 py-2 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                      {studentsInSelectedRombel.map((s, idx) => (
-                        <tr key={s.id || idx} className="hover:bg-emerald-50/40 transition-colors">
-                          <td className="px-3 py-2 text-center text-slate-400 font-bold">{idx + 1}</td>
-                          <td className="px-3 py-2 font-bold text-slate-900">{s.nama || s.namaLengkap || '-'}</td>
-                          <td className="px-3 py-2 font-mono text-slate-600">{s.nisn || '-'}</td>
-                          <td className="px-3 py-2 font-mono text-slate-600">{s.nis || '-'}</td>
-                          <td className="px-3 py-2">
-                            <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              (String(s.gender || s.jenisKelamin || '').toLowerCase().startsWith('l'))
-                                ? 'bg-sky-50 text-sky-700 border border-sky-200/60'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                            }`}>
-                              {s.gender || s.jenisKelamin || 'LAKI-LAKI'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Aktif
-                            </span>
-                          </td>
+              return (
+                <div className={`border rounded-2xl p-4 sm:p-5 space-y-3 animate-apple-fade ${
+                  isSelectedB 
+                    ? 'bg-yellow-50/70 border-yellow-200' 
+                    : 'bg-emerald-50/50 border-emerald-200'
+                }`}>
+                  <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 ${
+                    isSelectedB ? 'border-yellow-200/80' : 'border-emerald-200/70'
+                  }`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`w-2.5 h-2.5 rounded-full ${isSelectedB ? 'bg-yellow-500' : 'bg-emerald-600'}`}></span>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        Daftar Santri Kelas: <span className={`font-extrabold ${isSelectedB ? 'text-yellow-950' : 'text-emerald-800'}`}>{selectedRombelFilter}</span>
+                      </h4>
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                        isSelectedB
+                          ? 'text-yellow-900 bg-yellow-100/90 border-yellow-300/80'
+                          : 'text-emerald-800 bg-emerald-100/90 border-emerald-200'
+                      }`}>
+                        {studentsInSelectedRombel.length} Santri • TA {activeTahunAjaran}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRombelFilter(null)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer w-fit"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>Tutup Rincian Kelas</span>
+                    </button>
+                  </div>
+
+                  <div className={`overflow-x-auto max-h-72 overflow-y-auto rounded-xl border bg-white shadow-xs ${
+                    isSelectedB ? 'border-yellow-200/80' : 'border-emerald-200/80'
+                  }`}>
+                    <table className="w-full text-left text-xs">
+                      <thead className={`font-bold sticky top-0 border-b ${
+                        isSelectedB
+                          ? 'bg-yellow-50 text-yellow-950 border-yellow-200'
+                          : 'bg-emerald-50 text-emerald-900 border-emerald-100'
+                      }`}>
+                        <tr>
+                          <th className="px-3 py-2 w-12 text-center">No</th>
+                          <th className="px-3 py-2">Nama Santri</th>
+                          <th className="px-3 py-2">NISN</th>
+                          <th className="px-3 py-2">NIS</th>
+                          <th className="px-3 py-2">Jenis Kelamin</th>
+                          <th className="px-3 py-2 text-center">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {studentsInSelectedRombel.map((s, idx) => (
+                          <tr key={s.id || idx} className={isSelectedB ? 'hover:bg-yellow-50/50 transition-colors' : 'hover:bg-emerald-50/40 transition-colors'}>
+                            <td className="px-3 py-2 text-center text-slate-400 font-bold">{idx + 1}</td>
+                            <td className="px-3 py-2 font-bold text-slate-900">{s.nama || s.namaLengkap || '-'}</td>
+                            <td className="px-3 py-2 font-mono text-slate-600">{s.nisn || '-'}</td>
+                            <td className="px-3 py-2 font-mono text-slate-600">{s.nis || '-'}</td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                (String(s.gender || s.jenisKelamin || '').toLowerCase().startsWith('l'))
+                                  ? 'bg-sky-50 text-sky-700 border border-sky-200/60'
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                              }`}>
+                                {s.gender || s.jenisKelamin || 'LAKI-LAKI'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Aktif
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Bottom Metric Footer */}
             <div className="bg-slate-50 border border-slate-200/80 rounded-[18px] p-4 flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-slate-600">
@@ -1044,7 +1019,7 @@ export default function CekDataSantri({
                   Rata-rata: <strong className="text-slate-800 font-bold">{Math.round(stats.totalSantriAktif / Math.max(1, stats.totalRombel))}</strong> santri / rombel aktif
                 </span>
                 <span className="text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-md font-bold text-[10px] border border-emerald-200/60">
-                  Tahun Ajaran Aktif: {activeTahunAjaran}
+                  Tahun Ajaran: {activeTahunAjaran}
                 </span>
               </div>
             </div>
