@@ -768,7 +768,7 @@ export default function App() {
         : sheetId.split('?')[0].split('#')[0].trim();
 
       // Mengarahkan fetch langsung ke URL Google Apps Script Anda
-const baseAppsScript = "https://google.com";
+const baseAppsScript = "https://script.google.com/macros/s/AKfycbxRwSRDJfp9V7w-B1ggihfImbg3oKLAO2_oIbRVLOS8-c5_h1UYU5pYczNT-bQwkpuI/exec";
 const url = `${baseAppsScript}${cleanId ? `?spreadsheetId=${encodeURIComponent(cleanId)}` : ''}`;
 const response = await fetch(url);
 
