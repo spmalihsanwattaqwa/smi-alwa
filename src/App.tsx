@@ -767,8 +767,11 @@ export default function App() {
         ? (sheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)?.[1] || sheetId)
         : sheetId.split('?')[0].split('#')[0].trim();
 
-      const url = `/api/sheets/fetch?appsScriptUrl=${encodeURIComponent(appsScriptUrl)}${cleanId ? `&spreadsheetId=${encodeURIComponent(cleanId)}` : ''}`;
-      const response = await fetch(url);
+      // Mengarahkan fetch langsung ke URL Google Apps Script Anda
+const baseAppsScript = "https://google.com";
+const url = `${baseAppsScript}${cleanId ? `?spreadsheetId=${encodeURIComponent(cleanId)}` : ''}`;
+const response = await fetch(url);
+
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && typeof result.data === 'object' && Object.keys(result.data).length > 0) {
