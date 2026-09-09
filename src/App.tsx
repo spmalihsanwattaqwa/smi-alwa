@@ -299,7 +299,8 @@ export default function App() {
       const saved = localStorage.getItem('db_students');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) return [];
           const mapped = parsed.map((s: any, idx: number) => ({
             ...s,
             id: String(s.id || `std-${idx + 1}`),

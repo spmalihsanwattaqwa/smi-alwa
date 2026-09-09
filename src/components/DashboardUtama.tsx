@@ -915,9 +915,6 @@ export default function DashboardUtama({
               }
             ];
 
-        const displayedJenjangLabel = (jenjangList[0]?.nama || profile?.jenjang || "Pondok Pesantren").toUpperCase();
-        const displayedKepala = jenjangList[0]?.kepala || profile?.kepsek || "Nama Kepala Jenjang";
-
         return (
           <div className="space-y-6">
             
@@ -1117,10 +1114,33 @@ export default function DashboardUtama({
               </div>
             </div>
 
-            {/* 6 KARTU STATISTIK (SANTRI AKTIF, DEWAN ASATIDZ, TOTAL SANTRI, ROMBEL KELAS, PENDAFTAR PPDB, JENJANG UTAMA) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 items-stretch">
+            {/* 5 KARTU STATISTIK (TOTAL SANTRI, SANTRI AKTIF, DEWAN GURU, ROMBEL KELAS, PENDAFTAR PPDB) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 items-stretch">
               
-              {/* Card 1: Santri Aktif (Green) */}
+              {/* Card 1: Total Santri (Purple) */}
+              <div className="p-4 sm:p-5 rounded-2xl md:rounded-3xl bg-purple-50/70 hover:bg-purple-50 border-2 border-purple-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-purple-900">
+                      Total Santri
+                    </span>
+                    <span className="h-3 w-3 rounded-full bg-purple-600 shrink-0 ring-4 ring-purple-200" />
+                  </div>
+                  <div className="flex items-baseline gap-1.5 my-1">
+                    <span className="text-2xl sm:text-3xl font-black text-purple-950 tracking-tight">
+                      {totalStudents}
+                    </span>
+                    <span className="text-xs sm:text-sm font-black text-purple-800">
+                      Santri
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-purple-200 text-xs font-black text-purple-900 truncate">
+                  📚 {siswaAktif} Aktif • {Math.max(0, totalStudents - siswaAktif)} Alumni/Lain
+                </div>
+              </div>
+
+              {/* Card 2: Santri Aktif (Green) */}
               <div className="p-4 sm:p-5 rounded-2xl md:rounded-3xl bg-emerald-50/70 hover:bg-emerald-50 border-2 border-emerald-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1154,12 +1174,12 @@ export default function DashboardUtama({
                 </div>
               </div>
 
-              {/* Card 2: Dewan Asatidz (Blue/Indigo) */}
+              {/* Card 3: Dewan Guru (Blue/Indigo) */}
               <div className="p-4 sm:p-5 rounded-2xl md:rounded-3xl bg-blue-50/70 hover:bg-blue-50 border-2 border-blue-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-black uppercase tracking-wider text-blue-900">
-                      Dewan Asatidz
+                      Dewan Guru
                     </span>
                     <span className="h-3 w-3 rounded-full bg-blue-600 shrink-0 ring-4 ring-blue-200" />
                   </div>
@@ -1168,7 +1188,7 @@ export default function DashboardUtama({
                       {ustadzAktif}
                     </span>
                     <span className="text-xs sm:text-sm font-black text-blue-800">
-                      Ustadz
+                      Guru
                     </span>
                   </div>
                 </div>
@@ -1183,29 +1203,6 @@ export default function DashboardUtama({
                     <span className="text-blue-300">•</span>
                     <span>🚶 {nonMukimCount} Laju</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Card 3: Total Santri (Purple) */}
-              <div className="p-4 sm:p-5 rounded-2xl md:rounded-3xl bg-purple-50/70 hover:bg-purple-50 border-2 border-purple-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-purple-900">
-                      Total Santri
-                    </span>
-                    <span className="h-3 w-3 rounded-full bg-purple-600 shrink-0 ring-4 ring-purple-200" />
-                  </div>
-                  <div className="flex items-baseline gap-1.5 my-1">
-                    <span className="text-2xl sm:text-3xl font-black text-purple-950 tracking-tight">
-                      {totalStudents}
-                    </span>
-                    <span className="text-xs sm:text-sm font-black text-purple-800">
-                      Santri
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 pt-2.5 border-t border-purple-200 text-xs font-black text-purple-900 truncate">
-                  📚 {siswaAktif} Aktif • {Math.max(0, totalStudents - siswaAktif)} Alumni/Lain
                 </div>
               </div>
 
@@ -1252,27 +1249,6 @@ export default function DashboardUtama({
                 </div>
                 <div className="mt-3 pt-2.5 border-t border-rose-200 text-xs font-black text-rose-900 truncate">
                   ✅ {pendaftarLulus} Diterima • ⏳ {pendaftarPending} Pending
-                </div>
-              </div>
-
-              {/* Card 6: Jenjang Utama (Teal/Cyan) */}
-              <div className="p-4 sm:p-5 rounded-2xl md:rounded-3xl bg-teal-50/70 hover:bg-teal-50 border-2 border-teal-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-teal-900">
-                      Jenjang Utama
-                    </span>
-                    <span className="h-3 w-3 rounded-full bg-teal-500 shrink-0 ring-4 ring-teal-200" />
-                  </div>
-                  <div className="my-1">
-                    <span className="text-xl sm:text-2xl font-black text-teal-950 tracking-tight truncate block">
-                      {displayedJenjangLabel}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 pt-2.5 border-t border-teal-200 text-xs font-black text-teal-900 truncate flex items-center gap-1.5">
-                  <span>👤</span>
-                  <span className="truncate">{displayedKepala}</span>
                 </div>
               </div>
 

@@ -26,6 +26,7 @@ import { googleSignIn, getAccessToken } from '../lib/firebase';
 import { PengaturanSistem } from '../types';
 import { DEFAULT_SISTEM_CONFIG } from '../data';
 import { realtimeSync } from '../lib/realtimeSync';
+import { splitStudentsForSheets } from '../lib/studentDataHelper';
 import { sanitizeIdNumber } from '../utils_id';
 import { formatDateToDDMMYYYY, isDateKeyOrValue } from '../utils_date';
 import { 
@@ -257,6 +258,7 @@ export default function BackupExportPanel({
     'db_config',
     'db_school_profile',
     'db_students',
+    'db_students_academic',
     'db_teachers_attendance',
     'db_visimisi',
     'db_struktur',
@@ -329,56 +331,65 @@ function doPost(e) {
       
       // Dukung array maupun single config object
       var records = Array.isArray(rawRecords) ? rawRecords : [rawRecords];
+      
+      // KEAMANAN ANTI-WIPEOUT: Jangan bersihkan sheet jika array data kosong
+      if ((key === 'db_students' || key === 'db_students_academic' || key === 'db_ustadz_master') && records.length === 0) {
+        continue;
+      }
       if (records.length === 0) continue;
       
-      var sheetName = getFriendlySheetName(key);
-      var sheet = spreadsheet.getSheetByName(sheetName);
-      if (!sheet) {
-        sheet = spreadsheet.insertSheet(sheetName);
-      } else {
-        sheet.clear(); // Bersihkan data usang untuk ditimpa penuh
-      }
-      
-      // Ambil daftar header unik dari semua baris
-      var headerMap = {};
-      var keys = [];
-      for (var r = 0; r < records.length; r++) {
-        var rec = records[r];
-        if (typeof rec === 'object' && rec !== null) {
-          for (var prop in rec) {
-            if (rec.hasOwnProperty(prop) && !headerMap[prop]) {
-              headerMap[prop] = true;
-              keys.push(prop);
+      // AUTO-SPLIT DATA SISWA: Pisahkan MASTER_SISWA (biodata) dan DATA_SISWA_AKADEMIK (kelas & TA)
+      if (key === 'db_students') {
+        var academicRecords = [];
+        var masterRecords = [];
+        var defaultTA = payload['cfg_tahun_ajaran_aktif'] || '2026/2027';
+        var defaultSem = payload['cfg_semester_aktif'] || 'Ganjil';
+        
+        for (var si = 0; si < records.length; si++) {
+          var s = records[si];
+          if (!s || typeof s !== 'object') continue;
+          
+          academicRecords.push({
+            id: String(s.id || ''),
+            nis: String(s.nis || ''),
+            nisn: String(s.nisn || ''),
+            nama: String(s.nama || s.namaLengkap || ''),
+            jenisKelamin: String(s.jenisKelamin || s.gender || 'LAKI-LAKI'),
+            kelas: String(s.kelas || 'Belum Diatur'),
+            tahunAjaran: String(s.academicYear || s.tahunAjaran || defaultTA),
+            semester: String(s.semester || defaultSem),
+            status: String(s.status || 'Aktif'),
+            jenjang: String(s.jenjang || 'SMP Terpadu'),
+            waliKelas: String(s.waliKelas || '-'),
+            kelompokBelajar: String(s.kelompokBelajar || '-'),
+            halaqahTahfidz: String(s.halaqahTahfidz || '-'),
+            asrama: String(s.asrama || '-'),
+            kamar: String(s.kamar || '-'),
+            catatanAkademik: String(s.catatanAkademik || '')
+          });
+          
+          var mCopy = {};
+          for (var prop in s) {
+            if (s.hasOwnProperty(prop)) {
+              var lowerP = prop.toLowerCase();
+              if (lowerP !== 'kelas' && lowerP !== 'academicyear' && lowerP !== 'tahunajaran' && lowerP !== 'semester' && lowerP !== 'rombel' && lowerP !== 'academichistory') {
+                mCopy[prop] = s[prop];
+              }
             }
           }
+          masterRecords.push(mCopy);
         }
-      }
-      
-      if (keys.length === 0) {
-        keys = ['value'];
-        records = records.map(function(v) { return { value: v }; });
-      }
-      
-      // Tulis header
-      sheet.appendRow(keys);
-      
-      // Tulis baris data
-      for (var i = 0; i < records.length; i++) {
-        var rowData = [];
-        for (var j = 0; j < keys.length; j++) {
-          var val = records[i] ? records[i][keys[j]] : "";
-          if (typeof val === 'object' && val !== null) {
-            rowData.push(JSON.stringify(val));
-          } else {
-            rowData.push(val === undefined || val === null ? "" : val);
-          }
+        
+        // Simpan DATA_SISWA_AKADEMIK
+        if (!payload['db_students_academic'] && academicRecords.length > 0) {
+          writeTableToSheet(spreadsheet, "DATA_SISWA_AKADEMIK", academicRecords);
+          syncedKeys.push("DATA_SISWA_AKADEMIK");
         }
-        sheet.appendRow(rowData);
+        records = masterRecords;
       }
       
-      // Format Header (Background hijau Al-Ihsan & Teks Tebal Putih)
-      sheet.getRange(1, 1, 1, keys.length).setFontWeight("bold").setBackground("#0f766e").setFontColor("#ffffff");
-      sheet.setFrozenRows(1);
+      var sheetName = getFriendlySheetName(key);
+      writeTableToSheet(spreadsheet, sheetName, records);
       syncedKeys.push(sheetName);
     }
     
@@ -397,6 +408,54 @@ function doPost(e) {
   }
 }
 
+function writeTableToSheet(spreadsheet, sheetName, records) {
+  if (!records || records.length === 0) return;
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(sheetName);
+  } else {
+    sheet.clear();
+  }
+  
+  var headerMap = {};
+  var keys = [];
+  for (var r = 0; r < records.length; r++) {
+    var rec = records[r];
+    if (typeof rec === 'object' && rec !== null) {
+      for (var prop in rec) {
+        if (rec.hasOwnProperty(prop) && !headerMap[prop]) {
+          headerMap[prop] = true;
+          keys.push(prop);
+        }
+      }
+    }
+  }
+  if (keys.length === 0) return;
+  
+  sheet.appendRow(keys);
+  
+  var rowsToAppend = [];
+  for (var i = 0; i < records.length; i++) {
+    var rowData = [];
+    for (var j = 0; j < keys.length; j++) {
+      var val = records[i] ? records[i][keys[j]] : "";
+      if (typeof val === 'object' && val !== null) {
+        rowData.push(JSON.stringify(val));
+      } else {
+        rowData.push(val === undefined || val === null ? "" : String(val));
+      }
+    }
+    rowsToAppend.push(rowData);
+  }
+  
+  if (rowsToAppend.length > 0) {
+    sheet.getRange(2, 1, rowsToAppend.length, keys.length).setValues(rowsToAppend);
+  }
+  
+  sheet.getRange(1, 1, 1, keys.length).setFontWeight("bold").setBackground("#0f766e").setFontColor("#ffffff");
+  sheet.setFrozenRows(1);
+}
+
 function doGet(e) {
   try {
     var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -406,6 +465,8 @@ function doGet(e) {
     var reverseMap = {
       'MASTER_PPDB': 'db_pendaftar',
       'MASTER_SISWA': 'db_students',
+      'DATA_SISWA_AKADEMIK': 'db_students_academic',
+      'SISWA_AKADEMIK': 'db_students_academic',
       'MASTER_GURU_USTADZ': 'db_ustadz_master',
       'MASTER_BEASISWA': 'db_beasiswa',
       'MASTER_ROMBEL_KELAS': 'db_kelas',
@@ -470,6 +531,32 @@ function doGet(e) {
       result[key] = rows;
     }
 
+    // Auto-merge MASTER_SISWA and DATA_SISWA_AKADEMIK
+    if (result['db_students'] && result['db_students_academic']) {
+      var acadMap = {};
+      var acadList = result['db_students_academic'];
+      for (var a = 0; a < acadList.length; a++) {
+        var item = acadList[a];
+        if (item.id) acadMap['id:' + item.id] = item;
+        if (item.nis) acadMap['nis:' + item.nis] = item;
+        if (item.nisn) acadMap['nisn:' + item.nisn] = item;
+      }
+      for (var b = 0; b < result['db_students'].length; b++) {
+        var sObj = result['db_students'][b];
+        var mMatch = acadMap['id:' + sObj.id] || acadMap['nis:' + sObj.nis] || acadMap['nisn:' + sObj.nisn];
+        if (mMatch) {
+          sObj.kelas = mMatch.kelas || sObj.kelas || 'Belum Diatur';
+          sObj.academicYear = mMatch.tahunAjaran || sObj.academicYear || '2026/2027';
+          sObj.semester = mMatch.semester || sObj.semester || 'Ganjil';
+          sObj.waliKelas = mMatch.waliKelas || sObj.waliKelas || '-';
+          sObj.kelompokBelajar = mMatch.kelompokBelajar || sObj.kelompokBelajar || '-';
+          sObj.halaqahTahfidz = mMatch.halaqahTahfidz || sObj.halaqahTahfidz || '-';
+          sObj.asrama = mMatch.asrama || sObj.asrama || '-';
+          sObj.kamar = mMatch.kamar || sObj.kamar || '-';
+        }
+      }
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       count: Object.keys(result).length,
@@ -489,6 +576,7 @@ function getFriendlySheetName(key) {
   var mapping = {
     'db_pendaftar': 'MASTER_PPDB',
     'db_students': 'MASTER_SISWA',
+    'db_students_academic': 'DATA_SISWA_AKADEMIK',
     'db_ustadz_master': 'MASTER_GURU_USTADZ',
     'db_beasiswa': 'MASTER_BEASISWA',
     'db_kelas': 'MASTER_ROMBEL_KELAS',
@@ -907,18 +995,57 @@ function getFriendlySheetName(key) {
 
   const handleResetSystem = () => {
     const confirmReset = window.confirm(
-      "PERINGATAN KRITIKAL: Tindakan ini akan MENGHAPUS SELURUH DATA (Siswa, Guru, Nilai, Pengaturan) dari browser ini secara permanen. Apakah Anda yakin?"
+      "PERINGATAN: Tindakan ini akan MENGHAPUS SELURUH DATA OPERASIONAL (Siswa, Guru, Pendaftar PPDB, Nilai, Presensi, Tahfidz, Jadwal, dll). Seluruh PENGATURAN (Profil Sekolah, Konfigurasi Sistem, Akun, dan Pengaturan Tahun Ajaran) TIDAK akan ikut terhapus dan tetap aman.\n\nApakah Anda yakin ingin melanjutkan?"
     );
     if (!confirmReset) return;
 
-    LOCAL_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
-    localStorage.removeItem('db_config');
-    localStorage.removeItem('cfg_tahun_ajaran_aktif');
-    localStorage.removeItem('cfg_semester_aktif');
-    localStorage.removeItem('session_user_role');
-    localStorage.removeItem('session_guru_name');
+    // Filter pengecekan: Hanya kunci pengaturan/konfigurasi yang TIDAK ikut terhapus
+    const isSettingsKey = (key: string) => {
+      return (
+        key === 'db_config' ||
+        key === 'db_school_profile' ||
+        key === 'db_visimisi' ||
+        key === 'db_struktur' ||
+        key === 'db_beranda_config' ||
+        key === 'db_rbac_config' ||
+        key === 'db_portal_access' ||
+        key === 'app_ui_theme' ||
+        key.startsWith('cfg_') ||
+        key.startsWith('session_')
+      );
+    };
 
-    triggerAlert('Seluruh data sistem telah dibersihkan. Halaman akan dimuat ulang...', 'success');
+    // Bersihkan semua data operasional di LOCAL_STORAGE_KEYS (kecuali pengaturan)
+    LOCAL_STORAGE_KEYS.forEach(key => {
+      if (!isSettingsKey(key)) {
+        localStorage.setItem(key, JSON.stringify([]));
+      }
+    });
+
+    // Pastikan seluruh data transaksi/operasional lainnya juga dikosongkan
+    const EXTRA_DATA_KEYS = [
+      'db_student_attendance_v2',
+      'db_teachers_attendance_history',
+      'db_event_attendance',
+      'db_grades_karakter_v2',
+      'db_student_mutations',
+      'db_tahfidz_records',
+      'db_tahfidz_records_v2',
+      'db_spm_archives',
+      'db_student_archives',
+      'db_jadwal_time_slots',
+      'db_attendance_submitted_rombels',
+      'db_pondok_agenda',
+      'db_custom_donatur_list',
+      'db_academic_calendar',
+      'tahfidz_exam_banner_dismissed'
+    ];
+
+    EXTRA_DATA_KEYS.forEach(key => {
+      localStorage.setItem(key, JSON.stringify([]));
+    });
+
+    triggerAlert('Seluruh data operasional telah dibersihkan. Pengaturan sistem tetap aman dipertahankan. Halaman akan dimuat ulang...', 'success');
     setTimeout(() => window.location.reload(), 2000);
   };
 
@@ -1098,6 +1225,19 @@ function getFriendlySheetName(key) {
           }
         }
       });
+
+      // Split Master and Academic student data & apply safety guards
+      if (syncPayload.db_students && Array.isArray(syncPayload.db_students)) {
+        if (syncPayload.db_students.length === 0) {
+          delete syncPayload.db_students;
+        } else {
+          const defaultTA = syncPayload.cfg_tahun_ajaran_aktif || localStorage.getItem('cfg_tahun_ajaran_aktif') || '2026/2027';
+          const defaultSem = syncPayload.cfg_semester_aktif || localStorage.getItem('cfg_semester_aktif') || 'Ganjil';
+          const { masterRecords, academicRecords } = splitStudentsForSheets(syncPayload.db_students, defaultTA, defaultSem);
+          syncPayload.db_students = masterRecords;
+          syncPayload.db_students_academic = academicRecords;
+        }
+      }
 
       // Send to webhook via Server Proxy to avoid CORS
       const response = await fetch('/api/sheets/proxy-webhook', {
@@ -2185,20 +2325,20 @@ function getFriendlySheetName(key) {
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-rose-900 uppercase tracking-tight">Zona Berbahaya</h3>
-                    <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest leading-none">Hapus Seluruh Data Aplikasi</p>
+                    <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest leading-none">Hapus Data Operasional (Pengaturan Tetap Aman)</p>
                   </div>
                 </div>
 
                 <div className="p-4 bg-white/50 rounded-2xl border border-rose-200">
                   <p className="text-[10px] text-rose-700 font-semibold leading-relaxed mb-4 uppercase tracking-tight">
-                    membersihkan seluruh database (Siswa, Guru, Nilai, dan Pengaturan) dan memulai dari awal. Tindakan ini tidak dapat dibatalkan.
+                    Membersihkan seluruh database operasional (Siswa, Guru, Pendaftar PPDB, Nilai, Presensi, dan Jadwal). Seluruh Pengaturan Sistem, Profil Lembaga, dan Konfigurasi Akun TIDAK akan ikut terhapus dan tetap terjaga aman.
                   </p>
                   <button 
                     onClick={handleResetSystem}
                     className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-rose-200 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span>Bersihkan Seluruh Data Sistem</span>
+                    <span>Bersihkan Seluruh Data (Kecuali Pengaturan)</span>
                   </button>
                 </div>
               </div>

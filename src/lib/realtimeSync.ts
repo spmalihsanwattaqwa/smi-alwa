@@ -9,6 +9,8 @@
  * 4. Resilient error handling with retry and queue management
  */
 
+import { splitStudentsForSheets, mergeStudentsFromSheets } from './studentDataHelper';
+
 export interface SyncStatus {
   state: 'unconfigured' | 'idle' | 'syncing' | 'synced' | 'error';
   lastSyncedAt: Date | null;
@@ -21,6 +23,7 @@ export type SyncListener = (status?: SyncStatus) => void;
 
 export const SYNC_TABLE_KEYS = [
   'db_students',
+  'db_students_academic',
   'db_pendaftar',
   'db_ustadz_master',
   'db_kelas',
@@ -189,7 +192,25 @@ class RealtimeSyncManager {
       return;
     }
 
-    this.pendingQueue.set(key, data);
+    // Safety Guard: Do not queue empty student list to prevent spreadsheet wipeout
+    if (key === 'db_students' && Array.isArray(data)) {
+      if (data.length === 0) {
+        console.warn("[RealtimeSync] Blocked queueing empty db_students to prevent spreadsheet wipeout.");
+        return;
+      }
+      try {
+        const defaultTA = localStorage.getItem('cfg_tahun_ajaran_aktif') || '2026/2027';
+        const defaultSemester = localStorage.getItem('cfg_semester_aktif') || 'Ganjil';
+        const { masterRecords, academicRecords } = splitStudentsForSheets(data, defaultTA, defaultSemester);
+        
+        this.pendingQueue.set('db_students', masterRecords);
+        this.pendingQueue.set('db_students_academic', academicRecords);
+      } catch (err) {
+        this.pendingQueue.set(key, data);
+      }
+    } else {
+      this.pendingQueue.set(key, data);
+    }
     this.status = {
       ...this.status,
       pendingKeys: Array.from(this.pendingQueue.keys()),
@@ -341,6 +362,19 @@ class RealtimeSyncManager {
       }
     });
 
+    // Safety & Separation: Split students and prevent wiping with empty array
+    if (payload.db_students && Array.isArray(payload.db_students)) {
+      if (payload.db_students.length === 0) {
+        delete payload.db_students;
+      } else {
+        const defaultTA = payload.cfg_tahun_ajaran_aktif || localStorage.getItem('cfg_tahun_ajaran_aktif') || '2026/2027';
+        const defaultSemester = payload.cfg_semester_aktif || localStorage.getItem('cfg_semester_aktif') || 'Ganjil';
+        const { masterRecords, academicRecords } = splitStudentsForSheets(payload.db_students, defaultTA, defaultSemester);
+        payload.db_students = masterRecords;
+        payload.db_students_academic = academicRecords;
+      }
+    }
+
     this.isSyncing = true;
     this.status = {
       ...this.status,
@@ -446,6 +480,18 @@ class RealtimeSyncManager {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data && typeof json.data === 'object') {
+          // Merge master and academic student data to provide seamless complete student records
+          if (json.data.db_students || json.data.db_students_academic) {
+            const defTA = json.data.cfg_tahun_ajaran_aktif || localStorage.getItem('cfg_tahun_ajaran_aktif') || '2026/2027';
+            const defSem = json.data.cfg_semester_aktif || localStorage.getItem('cfg_semester_aktif') || 'Ganjil';
+            json.data.db_students = mergeStudentsFromSheets(
+              json.data.db_students || [],
+              json.data.db_students_academic || [],
+              defTA,
+              defSem
+            );
+          }
+
           let count = 0;
           Object.keys(json.data).forEach(k => {
             const val = json.data[k];

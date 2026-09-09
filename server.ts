@@ -470,6 +470,60 @@ async function startServer() {
     let targetUrl = normalizeAppsScriptUrl(rawUrl);
     const payload = req.body.payload;
 
+    // SAFETY & SEPARATION GUARDS FOR GOOGLE SHEETS
+    if (payload && typeof payload === 'object') {
+      // 1. Anti-Wipeout Guard: Never push empty array of students or ustadz to webhook
+      if (Array.isArray(payload.db_students) && payload.db_students.length === 0) {
+        console.warn("[SAFETY GUARD] Blocked empty payload.db_students from being forwarded to Apps Script webhook.");
+        delete payload.db_students;
+      }
+      if (Array.isArray(payload.db_students_academic) && payload.db_students_academic.length === 0) {
+        delete payload.db_students_academic;
+      }
+      if (Array.isArray(payload.db_ustadz_master) && payload.db_ustadz_master.length === 0) {
+        delete payload.db_ustadz_master;
+      }
+
+      // 2. Separate Sheets: If db_students is present, split into Master (tanpa kelas dan TA) and Akademik (dengan kelas dan TA)
+      if (Array.isArray(payload.db_students) && payload.db_students.length > 0) {
+        const fullStudents = payload.db_students;
+        const defaultTA = payload.cfg_tahun_ajaran_aktif || '2026/2027';
+        const defaultSemester = payload.cfg_semester_aktif || 'Ganjil';
+
+        // Academic table (dengan kelas dan TA)
+        payload.db_students_academic = fullStudents.map((s: any) => ({
+          id: String(s.id || '').trim(),
+          nis: String(s.nis || '').trim(),
+          nisn: String(s.nisn || '').trim(),
+          nama: String(s.nama || s.namaLengkap || '').trim(),
+          jenisKelamin: String(s.jenisKelamin || s.gender || 'LAKI-LAKI').trim(),
+          kelas: String(s.kelas || 'Belum Diatur').trim(),
+          tahunAjaran: String(s.academicYear || s.tahunAjaran || defaultTA).trim(),
+          semester: String(s.semester || defaultSemester).trim(),
+          status: String(s.status || 'Aktif').trim(),
+          jenjang: String(s.jenjang || 'SMP Terpadu').trim(),
+          waliKelas: String(s.waliKelas || '-').trim(),
+          kelompokBelajar: String(s.kelompokBelajar || '-').trim(),
+          halaqahTahfidz: String(s.halaqahTahfidz || '-').trim(),
+          asrama: String(s.asrama || '-').trim(),
+          kamar: String(s.kamar || '-').trim(),
+          catatanAkademik: String(s.catatanAkademik || '').trim()
+        }));
+
+        // Master biodata table (tanpa kelas dan TA)
+        payload.db_students = fullStudents.map((s: any) => {
+          const masterCopy = { ...s };
+          delete masterCopy.kelas;
+          delete masterCopy.academicYear;
+          delete masterCopy.tahunAjaran;
+          delete masterCopy.semester;
+          delete masterCopy.rombel;
+          delete masterCopy.academicHistory;
+          return masterCopy;
+        });
+      }
+    }
+
     console.log(`Proxying POST request to Apps Script: ${targetUrl.substring(0, 60)}...`);
 
     try {
@@ -791,6 +845,8 @@ async function startServer() {
     const reverseMapping: Record<string, string> = {
       "MASTER_PPDB": "db_pendaftar",
       "MASTER_SISWA": "db_students",
+      "DATA_SISWA_AKADEMIK": "db_students_academic",
+      "SISWA_AKADEMIK": "db_students_academic",
       "MASTER_GURU_USTADZ": "db_ustadz_master",
       "MASTER_ROMBEL_KELAS": "db_kelas",
       "MASTER_MAPEL_KURIKULUM": "db_pelajaran",
@@ -953,7 +1009,91 @@ async function startServer() {
       }
     }
 
+    // Automatically merge Master and Academic Student sheets if available
+    if (result['db_students'] || result['db_students_academic']) {
+      result['db_students'] = mergeStudentDatasets(
+        result['db_students'] || [], 
+        result['db_students_academic'] || [],
+        result['cfg_tahun_ajaran_aktif'] || '2026/2027',
+        result['cfg_semester_aktif'] || 'Ganjil'
+      );
+    }
+
     return { fetchedCount, result };
+  }
+
+  // Helper to merge Master Student Biodata (tanpa kelas dan TA) with Academic Records (dengan kelas dan TA)
+  function mergeStudentDatasets(masterRecords: any[], academicRecords: any[], defaultTA = '2026/2027', defaultSemester = 'Ganjil') {
+    const masterList = Array.isArray(masterRecords) ? masterRecords : [];
+    const academicList = Array.isArray(academicRecords) ? academicRecords : [];
+
+    if (masterList.length === 0 && academicList.length === 0) return [];
+    if (academicList.length === 0) return masterList;
+
+    const academicMap = new Map<string, any>();
+    academicList.forEach(ak => {
+      if (!ak || typeof ak !== 'object') return;
+      const idKey = String(ak.id || '').trim().toLowerCase();
+      const nisKey = String(ak.nis || '').trim().toLowerCase();
+      const nisnKey = String(ak.nisn || '').trim().toLowerCase();
+      const namaKey = String(ak.nama || ak.namaLengkap || '').trim().toLowerCase();
+
+      if (idKey) academicMap.set(`id:${idKey}`, ak);
+      if (nisKey) academicMap.set(`nis:${nisKey}`, ak);
+      if (nisnKey) academicMap.set(`nisn:${nisnKey}`, ak);
+      if (namaKey) academicMap.set(`nama:${namaKey}`, ak);
+    });
+
+    const matchedKeys = new Set<string>();
+    const mergedList = masterList.map(m => {
+      if (!m || typeof m !== 'object') return m;
+      const idKey = String(m.id || '').trim().toLowerCase();
+      const nisKey = String(m.nis || '').trim().toLowerCase();
+      const nisnKey = String(m.nisn || '').trim().toLowerCase();
+      const namaKey = String(m.nama || m.namaLengkap || '').trim().toLowerCase();
+
+      const ak = (idKey ? academicMap.get(`id:${idKey}`) : null)
+        || (nisKey ? academicMap.get(`nis:${nisKey}`) : null)
+        || (nisnKey ? academicMap.get(`nisn:${nisnKey}`) : null)
+        || (namaKey ? academicMap.get(`nama:${namaKey}`) : null)
+        || {};
+
+      if (ak.id) matchedKeys.add(String(ak.id).trim().toLowerCase());
+
+      const activeTA = ak.tahunAjaran || ak.academicYear || m.academicYear || defaultTA;
+      return {
+        ...m,
+        kelas: ak.kelas || m.kelas || 'Belum Diatur',
+        academicYear: activeTA,
+        tahunAjaran: activeTA,
+        semester: ak.semester || m.semester || defaultSemester,
+        status: ak.status || m.status || 'Aktif',
+        jenjang: ak.jenjang || m.jenjang || 'SMP Terpadu',
+        waliKelas: ak.waliKelas || m.waliKelas || '',
+        halaqahTahfidz: ak.halaqahTahfidz || m.halaqahTahfidz || '',
+        kelompokBelajar: ak.kelompokBelajar || m.kelompokBelajar || '',
+        asrama: ak.asrama || m.asrama || '',
+        kamar: ak.kamar || m.kamar || '',
+        catatanAkademik: ak.catatanAkademik || m.catatanAkademik || ''
+      };
+    });
+
+    // Also include any academic records that didn't have a matching master record
+    academicList.forEach(ak => {
+      const idKey = String(ak.id || '').trim().toLowerCase();
+      if (idKey && !matchedKeys.has(idKey)) {
+        const activeTA = ak.tahunAjaran || ak.academicYear || defaultTA;
+        mergedList.push({
+          ...ak,
+          academicYear: activeTA,
+          tahunAjaran: activeTA,
+          semester: ak.semester || defaultSemester,
+          status: ak.status || 'Aktif'
+        });
+      }
+    });
+
+    return mergedList;
   }
 
   // Google Sheets Helper with OAuth Token support
@@ -1019,6 +1159,14 @@ async function startServer() {
           if (Array.isArray(remoteData['db_config']) && remoteData['db_config'].length > 0) {
             remoteData['db_config'] = remoteData['db_config'][0];
           }
+          if (remoteData['db_students'] || remoteData['db_students_academic']) {
+            remoteData['db_students'] = mergeStudentDatasets(
+              remoteData['db_students'] || [],
+              remoteData['db_students_academic'] || [],
+              remoteData['cfg_tahun_ajaran_aktif'] || '2026/2027',
+              remoteData['cfg_semester_aktif'] || 'Ganjil'
+            );
+          }
           if (remoteData['db_portal_access'] && Array.isArray(remoteData['db_portal_access'])) {
             try {
               const cur = loadServerConfig() || {};
@@ -1050,6 +1198,8 @@ async function startServer() {
       const reverseMapping: Record<string, string> = {
         "MASTER_PPDB": "db_pendaftar",
         "MASTER_SISWA": "db_students",
+        "DATA_SISWA_AKADEMIK": "db_students_academic",
+        "SISWA_AKADEMIK": "db_students_academic",
         "MASTER_GURU_USTADZ": "db_ustadz_master",
         "MASTER_BEASISWA": "db_beasiswa",
         "MASTER_ROMBEL_KELAS": "db_kelas",
@@ -1204,6 +1354,16 @@ async function startServer() {
         result['db_portal_access'] = parsePortalRecords(result['db_config'].portalAccessConfigs);
       }
 
+      // Automatically merge Master and Academic Student sheets if available
+      if (result['db_students'] || result['db_students_academic']) {
+        result['db_students'] = mergeStudentDatasets(
+          result['db_students'] || [],
+          result['db_students_academic'] || [],
+          result['cfg_tahun_ajaran_aktif'] || '2026/2027',
+          result['cfg_semester_aktif'] || 'Ganjil'
+        );
+      }
+
       return res.json({ success: true, data: result });
     } catch (apiErr: any) {
       // Gracefully attempt fallback via GViz or Apps Script
@@ -1240,6 +1400,57 @@ async function startServer() {
     const spreadsheetId = rawSpreadsheetId 
       ? extractSpreadsheetId(rawSpreadsheetId) 
       : (serverCfg.spreadsheetId ? extractSpreadsheetId(serverCfg.spreadsheetId) : "");
+
+    // Pre-process student data & apply safety guards
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.db_students) && data.db_students.length === 0) {
+        console.warn("[SAFETY GUARD] Blocked empty db_students from sync.");
+        delete data.db_students;
+      }
+      if (Array.isArray(data.db_students_academic) && data.db_students_academic.length === 0) {
+        delete data.db_students_academic;
+      }
+      if (Array.isArray(data.db_ustadz_master) && data.db_ustadz_master.length === 0) {
+        delete data.db_ustadz_master;
+      }
+
+      // Split into Master (tanpa kelas & TA) and Akademik (dengan kelas & TA)
+      if (Array.isArray(data.db_students) && data.db_students.length > 0) {
+        const fullStudents = data.db_students;
+        const defaultTA = data.cfg_tahun_ajaran_aktif || '2026/2027';
+        const defaultSemester = data.cfg_semester_aktif || 'Ganjil';
+
+        data.db_students_academic = fullStudents.map((s: any) => ({
+          id: String(s.id || '').trim(),
+          nis: String(s.nis || '').trim(),
+          nisn: String(s.nisn || '').trim(),
+          nama: String(s.nama || s.namaLengkap || '').trim(),
+          jenisKelamin: String(s.jenisKelamin || s.gender || 'LAKI-LAKI').trim(),
+          kelas: String(s.kelas || 'Belum Diatur').trim(),
+          tahunAjaran: String(s.academicYear || s.tahunAjaran || defaultTA).trim(),
+          semester: String(s.semester || defaultSemester).trim(),
+          status: String(s.status || 'Aktif').trim(),
+          jenjang: String(s.jenjang || 'SMP Terpadu').trim(),
+          waliKelas: String(s.waliKelas || '-').trim(),
+          kelompokBelajar: String(s.kelompokBelajar || '-').trim(),
+          halaqahTahfidz: String(s.halaqahTahfidz || '-').trim(),
+          asrama: String(s.asrama || '-').trim(),
+          kamar: String(s.kamar || '-').trim(),
+          catatanAkademik: String(s.catatanAkademik || '').trim()
+        }));
+
+        data.db_students = fullStudents.map((s: any) => {
+          const masterCopy = { ...s };
+          delete masterCopy.kelas;
+          delete masterCopy.academicYear;
+          delete masterCopy.tahunAjaran;
+          delete masterCopy.semester;
+          delete masterCopy.rombel;
+          delete masterCopy.academicHistory;
+          return masterCopy;
+        });
+      }
+    }
 
     // If no spreadsheetId provided but Apps Script URL is available, sync directly via Apps Script Webhook
     if (!spreadsheetId && appsScriptUrl) {
@@ -1376,6 +1587,11 @@ async function startServer() {
             headers = Object.keys(records);
           }
 
+          // Strict separation: Ensure Master Siswa does NOT have kelas & TA headers
+          if (key === 'db_students' || sheetName === 'MASTER_SISWA') {
+            headers = headers.filter(h => !['kelas', 'academicyear', 'tahunajaran', 'semester', 'rombel', 'academichistory'].includes(h.toLowerCase()));
+          }
+
           if (headers.length === 0) continue;
 
           rowValues = recordArray.map((rec: any) => headers.map(h => {
@@ -1401,6 +1617,12 @@ async function startServer() {
             }
             return strVal;
           }));
+        }
+
+        // Safety Guard: Never clear sheet if rowValues is empty
+        if (rowValues.length === 0) {
+          console.warn(`[SAFETY GUARD] Prevented wiping ${sheetName} because rowValues is empty.`);
+          continue;
         }
 
         const values = [
@@ -1607,6 +1829,7 @@ async function startServer() {
     const mapping: Record<string, string> = {
       "db_pendaftar": "MASTER_PPDB",
       "db_students": "MASTER_SISWA",
+      "db_students_academic": "DATA_SISWA_AKADEMIK",
       "db_ustadz_master": "MASTER_GURU_USTADZ",
       "db_beasiswa": "MASTER_BEASISWA",
       "db_kelas": "MASTER_ROMBEL_KELAS",
